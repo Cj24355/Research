@@ -19,7 +19,7 @@ void setup() {
   lcd.init();
   lcd.clear();         
   lcd.backlight();
-  pinMode(13, OUTPUT);
+  //pinMode(13, OUTPUT);
   Serial.begin(9600);
   sensors.begin();
   Serial.println("Ready");
@@ -31,39 +31,32 @@ void setup() {
 
 // pH Sensor Function
 void phGravitySensor() {
-  int buf[10], temp;
-  for (int i = 0; i < 10; i++) {
-    buf[i] = analogRead(SensorPin);
-    delay(10);
-  }
-  // Sort readings (bubble sort)
-  for (int i = 0; i < 10; i++) {
-    for (int j = i + 1; j < 10; j++) {
-      if (buf[i] > buf[j]) {
-        temp = buf[i];
-        buf[i] = buf[j];
-        buf[j] = temp;
-      }
-    }
-  }
+  float measure = analogRead(A0);  //Read pin A0
+  double voltage = measure*5/1024; //Analog-to-Digital Conversion
 
-  unsigned long avgValue = 0;
-  for(int i=2;i<8;i++)                      //take the average value of 6 center sample
-    avgValue+=buf[i];
-  float phValue=(float)avgValue*5.0/1024/6; //convert the analog into millivolt
-  phValue=3.5*phValue;
+ 
+  // PH_step (Voltage/pH Unit) = (Voltage@PH7-Voltage@PH4)/(PH7 - PH4)
+  float pH = 7+((2.70 - voltage)/0.1841); // PH_probe = PH7-((Voltage@PH7-Voltage@probe)/PH_step) //Calibrating
+  Serial.print("PH: ");
+  Serial.println(pH);
+  lcd.setCursor(1, 0);
+  lcd.print("pH:");
   lcd.setCursor(4, 0);
-  lcd.print("pH");
-  lcd.setCursor(6,0);
-  lcd.print(":");
-  Serial.print("pH: ");
-  //
-  lcd.setCursor(7, 0);
-  lcd.print( phValue, 2);
-  Serial.println(phValue, 2);
-  digitalWrite(13, HIGH);
-  //delay(500);
-  digitalWrite(13, LOW);
+  lcd.print(pH);
+  if(pH <= 7){
+    Serial.println(" - Acid");
+    lcd.setCursor(8, 0);
+    lcd.print(" - ACID"); // ACID    
+  }else{
+    Serial.println("- NTRL"); // Neutral
+    lcd.setCursor(8, 0);
+    lcd.print(" - NTRL"); 
+  }
+  if(pH >= 8){
+    Serial.println("Alkaline"); //ALKA
+    lcd.setCursor(8, 0);
+    lcd.print(" - ALKA");
+  }
 }
 
 // Temperature Sensor Function
@@ -95,5 +88,5 @@ void loop() {
   tempSensor();
   //delay(1000);
   phGravitySensor();
-  delay(3000);
+  delay(1000);
 }
